@@ -108,6 +108,3 @@ Services are designed to run on:
 - GCP Memorystore for Redis
 - GCP Cloud SQL for PostgreSQL
 - GCP Cloud Storage for model files
-
-## Add TAs to GitHub
-Collaborators added: elgoodm, Mopidevi18, DarthSid1603
