@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AtmosWatch</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #F4F5F0;
+    --panel:    #FFFFFF;
+    --border:   #E0E1DC;
+    --text:     #1A1A18;
+    --muted:    #888880;
+    --accent:   #2D6A4F;
+    --accent2:  #E76F51;
+    --good:     #2D6A4F;
+    --moderate: #E9C46A;
+    --unhealthy:#E76F51;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--text);
+    color: #F4F5F0;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .logo span { color: #74C69D; }
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #94A3B8;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #475569;
+  }
+  .dot.live { background: #74C69D; box-shadow: 0 0 6px #74C69D; }
+
+  /* ── Main Layout ── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .card.full { grid-column: 1 / -1; }
+
+  .card-header {
+    padding: 14px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .endpoint-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: #F4F5F0;
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 2px;
+    color: var(--accent);
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Form elements ── */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  select, input {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    width: 100%;
+    margin-top: 4px;
+  }
+  button:active { transform: scale(0.98); }
+  .btn-primary { background: var(--text); color: #F4F5F0; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+  /* ── Result areas ── */
+  .result-area {
+    margin-top: 18px;
+    min-height: 90px;
+    display: none;
+  }
+  .result-area.visible { display: block; }
+
+  /* AQI result */
+  .aqi-result {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  .aqi-badge {
+    width: 64px; height: 64px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    color: white;
+    background: var(--moderate);
+  }
+  .aqi-details { flex: 1; }
+  .aqi-category {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .aqi-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 16px;
+  }
+  .source-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+  .source-model  { background: #E8F5E9; color: #2D6A4F; }
+  .source-cache  { background: #FFF3E0; color: #E76F51; }
+
+  /* Forecast chart */
+  .forecast-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 110px;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .bar-value {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .bar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    background: var(--accent);
+    transition: height 0.4s ease;
+    min-height: 4px;
+  }
+  .bar-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .trend-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .trend-rising  { background: #FEE2E2; color: #DC2626; }
+  .trend-falling { background: #DCFCE7; color: #16A34A; }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stat-box {
+    background: var(--panel);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-val.connected { color: var(--good); }
+  .stat-val.disconnected { color: var(--unhealthy); }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .error-msg {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--unhealthy);
+    padding: 10px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 3px;
+    margin-top: 12px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Atmos<span>Watch</span></div>
+  <div class="status-bar">
+    <div class="status-item" id="redis-status">
+      <div class="dot" id="redis-dot"></div>
+      <span id="redis-label">Redis</span>
+    </div>
+    <div class="status-item" id="db-status">
+      <div class="dot" id="db-dot"></div>
+      <span id="db-label">PostgreSQL</span>
+    </div>
+    <div class="status-item">
+      <div class="dot live"></div>
+      <span>API</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- AQI Predict Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">AQI Risk Classifier</span>
+      <span class="endpoint-tag">POST /predict_aqi</span>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>City</label>
+          <select id="predict-city">
+            <option>Los Angeles</option>
+            <option>Chicago</option>
+            <option>Denver</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hour (0–23)</label>
+          <input type="number" id="predict-hour" value="8" min="0" max="23">
+        </div>
+        <div class="form-group">
+          <label>Month (1–12)</label>
+          <input type="number" id="predict-month" value="1" min="1" max="12">
+        </div>
+        <div class="form-group">
+          <label>Last PM2.5 reading</label>
+          <input type="number" id="predict-pm25" value="22" step="0.1">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="predictAQI()">Run Classifier</button>
+
+      <div class="result-area" id="predict-result"></div>
+    </div>
+  </div>
+
+  <!-- Forecast Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">6-Hour PM2.5 Forecast</span>
+      <span class="endpoint-tag">POST /forecast</span>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>City</label>
+          <select id="forecast-city">
+            <option>Los Angeles</option>
+            <option selected>Chicago</option>
+            <option>Denver</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hour (0–23)</label>
+          <input type="number" id="forecast-hour" value="14" min="0" max="23">
+        </div>
+        <div class="form-group">
+          <label>Month (1–12)</label>
+          <input type="number" id="forecast-month" value="6" min="1" max="12">
+        </div>
+        <div class="form-group">
+          <label>Last PM2.5 reading</label>
+          <input type="number" id="forecast-pm25" value="13" step="0.1">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="getForecast()">Run Forecast</button>
+
+      <div class="result-area" id="forecast-result"></div>
+    </div>
+  </div>
+
+  <!-- Stats Card -->
+  <div class="card full">
+    <div class="card-header">
+      <span class="card-title">System Stats</span>
+      <span class="endpoint-tag">GET /stats</span>
+    </div>
+    <div class="card-body">
+      <button class="btn-secondary" style="width:auto;padding:8px 20px;margin-bottom:16px" onclick="getStats()">Refresh Stats</button>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-cached">—</div>
+          <div class="stat-label">Cached Results</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-logged">—</div>
+          <div class="stat-label">Total Logged</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-redis">—</div>
+          <div class="stat-label">Redis</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-db">—</div>
+          <div class="stat-label">PostgreSQL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  AtmosWatch &mdash; Distributed Air Quality Platform &nbsp;|&nbsp;
+  <a href="https://github.com/ShivaSriram222/atmoswatch" target="_blank">github.com/ShivaSriram222/atmoswatch</a>
+  &nbsp;|&nbsp; Shiva Sriram
+</footer>
+
+<script>
+const API = "http://localhost:5000";
+
+// Build a realistic recent pm25 array from a single value
+function makeRecent(val) {
+  const v = parseFloat(val) || 15;
+  return [v-2, v-1, v+1, v, v-0.5, v].map(x => Math.max(0, parseFloat(x.toFixed(1))));
+}
+
+function categoryColor(cat) {
+  if (!cat) return "#888";
+  const c = cat.toLowerCase();
+  if (c.includes("good"))      return "#2D6A4F";
+  if (c.includes("moderate"))  return "#B5860D";
+  if (c.includes("unhealthy")) return "#C0392B";
+  return "#888";
+}
+
+// ── Predict AQI ──────────────────────────────
+async function predictAQI() {
+  const city  = document.getElementById("predict-city").value;
+  const hour  = parseInt(document.getElementById("predict-hour").value);
+  const month = parseInt(document.getElementById("predict-month").value);
+  const pm25  = document.getElementById("predict-pm25").value;
+  const el    = document.getElementById("predict-result");
+
+  el.className = "result-area visible";
+  el.innerHTML = `<div style="font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span>Running classifier...</div>`;
+
+  try {
+    const res  = await fetch(`${API}/predict_aqi`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city, hour, month, pm25_recent: makeRecent(pm25) })
+    });
+    const data = await res.json();
+    const col  = categoryColor(data.aqi_category);
+    const src  = data.source === "cache" ? "cache" : "model";
+
+    el.innerHTML = `
+      <div class="aqi-result" style="border-color:${col}22;background:${col}08">
+        <div class="aqi-badge" style="background:${col}">${data.aqi_category}</div>
+        <div class="aqi-details">
+          <div class="aqi-category" style="color:${col}">${data.aqi_category}</div>
+          <div class="aqi-meta">
+            <span>Confidence: <strong>${(data.confidence * 100).toFixed(0)}%</strong></span>
+            <span>City: <strong>${data.city}</strong></span>
+            <span class="source-tag source-${src}">${src === "cache" ? "⚡ from cache" : "🤖 from model"}</span>
+          </div>
+        </div>
+      </div>`;
+    getStats();
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">Could not reach API. Make sure docker compose is running on port 5000.</div>`;
+  }
+}
+
+// ── Forecast ──────────────────────────────────
+async function getForecast() {
+  const city  = document.getElementById("forecast-city").value;
+  const hour  = parseInt(document.getElementById("forecast-hour").value);
+  const month = parseInt(document.getElementById("forecast-month").value);
+  const pm25  = document.getElementById("forecast-pm25").value;
+  const el    = document.getElementById("forecast-result");
+
+  el.className = "result-area visible";
+  el.innerHTML = `<div style="font-family:var(--mono);font-size:12px;color:var(--muted)"><span class="spinner"></span>Running forecaster...</div>`;
+
+  try {
+    const res  = await fetch(`${API}/forecast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city, hour, month, pm25_recent: makeRecent(pm25) })
+    });
+    const data = await res.json();
+    const vals = data.forecast.map(f => f.pm25);
+    const max  = Math.max(...vals, 1);
+    const src  = data.source === "cache" ? "cache" : "model";
+
+    const bars = vals.map((v, i) => {
+      const h = Math.max(8, Math.round((v / max) * 90));
+      return `
+        <div class="bar-group">
+          <div class="bar-value">${v}</div>
+          <div class="bar" style="height:${h}px;background:var(--accent)"></div>
+          <div class="bar-label">+${i+1}h</div>
+        </div>`;
+    }).join("");
+
+    const trendClass = data.trend === "rising" ? "trend-rising" : "trend-falling";
+    const trendIcon  = data.trend === "rising" ? "↑ Rising" : "↓ Falling";
+
+    el.innerHTML = `
+      <div style="margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${city} — next 6 hours</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="trend-tag ${trendClass}">${trendIcon}</span>
+            <span class="source-tag source-${src}">${src === "cache" ? "⚡ cache" : "🤖 model"}</span>
+          </div>
+        </div>
+        <div class="forecast-bars">${bars}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:right">PM2.5 (ug/m³)</div>
+      </div>`;
+    getStats();
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">Could not reach API. Make sure docker compose is running on port 5000.</div>`;
+  }
+}
+
+// ── Stats ─────────────────────────────────────
+async function getStats() {
+  try {
+    const res  = await fetch(`${API}/stats`);
+    const data = await res.json();
+
+    document.getElementById("stat-cached").textContent = data.cached_results;
+    document.getElementById("stat-logged").textContent = data.total_predictions_logged;
+
+    const rEl = document.getElementById("stat-redis");
+    rEl.textContent = data.redis_connected ? "✓" : "✗";
+    rEl.className   = "stat-val " + (data.redis_connected ? "connected" : "disconnected");
+
+    const dEl = document.getElementById("stat-db");
+    dEl.textContent = data.db_connected ? "✓" : "✗";
+    dEl.className   = "stat-val " + (data.db_connected ? "connected" : "disconnected");
+
+    // Update header dots
+    document.getElementById("redis-dot").className  = "dot " + (data.redis_connected ? "live" : "");
+    document.getElementById("db-dot").className     = "dot " + (data.db_connected    ? "live" : "");
+  } catch(e) {
+    // silently fail header dots if API is down
+  }
+}
+
+// Auto-load stats on page load
+getStats();
+</script>
+</body>
+</html>
